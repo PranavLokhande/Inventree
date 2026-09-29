@@ -1,0 +1,2439 @@
+<!DOCTYPE html>
+<html lang="hi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Inventory AI — Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════ DESIGN SYSTEM ═══════════════ */
+        :root {
+            --bg: #f7f9f8;
+            --surface: #fff;
+            --surface-2: #f2f5f3;
+            --surface-3: #eaedeb;
+            --border: #e0e5e2;
+            --border-light: #eef1ef;
+            --primary: #0f7b4f;
+            --primary-light: #ecfdf5;
+            --primary-border: #a7f3d0;
+            --primary-hover: #0a6640;
+            --warn: #d97706;
+            --warn-light: #fffbeb;
+            --warn-border: #fde68a;
+            --danger: #dc2626;
+            --danger-light: #fef2f2;
+            --danger-border: #fecaca;
+            --info: #2563eb;
+            --info-light: #eff6ff;
+            --info-border: #bfdbfe;
+            --text: #111827;
+            --text-2: #374151;
+            --text-3: #6b7280;
+            --text-4: #9ca3af;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, .07);
+            --sidebar-w: 240px;
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 14px;
+            line-height: 1.5;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden
+        }
+
+        .mobile_top_margin{
+            margin-top: 5px;
+        }
+
+        /* ═══════════════ SIDEBAR ═══════════════ */
+        .sidebar {
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            transition: transform .3s cubic-bezier(.4, 0, .2, 1)
+        }
+
+        .s-brand {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .s-brand-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0
+        }
+
+        .s-brand h2 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -.01em
+        }
+
+        .s-brand p {
+            font-size: 11px;
+            color: var(--text-4);
+            margin-top: 1px
+        }
+
+        .s-nav {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto
+        }
+
+        .s-nav::-webkit-scrollbar {
+            width: 0
+        }
+
+        .s-group {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-4);
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            padding: 16px 12px 6px
+        }
+
+        .s-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-3);
+            transition: all .15s;
+            margin-bottom: 2px
+        }
+
+        .s-item:hover {
+            background: var(--surface-2);
+            color: var(--text)
+        }
+
+        .s-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600
+        }
+
+        .s-item .ico {
+            width: 20px;
+            text-align: center;
+            font-size: 15px;
+            flex-shrink: 0
+        }
+
+        .s-user {
+            padding: 16px;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .s-user-av {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px
+        }
+
+        .s-user-info {
+            flex: 1;
+            min-width: 0
+        }
+
+        .s-user-info .n {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .s-user-info .r {
+            font-size: 10px;
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .s-logout {
+            background: none;
+            border: none;
+            color: var(--text-4);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 6px;
+            border-radius: var(--radius-xs);
+            transition: .15s
+        }
+
+        .s-logout:hover {
+            color: var(--danger);
+            background: var(--danger-light)
+        }
+
+        /* ═══════════════ MOBILE TOPBAR ═══════════════ */
+        .m-topbar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 90;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 16px;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            padding-top: calc(12px + env(safe-area-inset-top))
+        }
+
+        .m-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0
+        }
+
+        .m-logo {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0
+        }
+
+        .m-brand>div {
+            min-width: 0
+        }
+
+        .m-title {
+            font-size: 15px;
+            font-weight: 700
+        }
+
+        .m-sub {
+            font-size: 10px;
+            color: var(--text-4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .m-menu {
+            width: 40px;
+            height: 40px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 10px;
+            flex-shrink: 0
+        }
+
+        .m-menu span {
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: var(--text-3);
+            border-radius: 2px
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .4);
+            z-index: 99;
+            backdrop-filter: blur(3px)
+        }
+
+        .overlay.show {
+            display: block
+        }
+
+        /* ═══════════════ MAIN ═══════════════ */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            min-width: 0;
+            padding: 24px 32px 48px;
+            max-width: 100%
+        }
+
+        .page-hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px
+        }
+
+        .page-hdr h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text)
+        }
+
+        .page-hdr .clock {
+            font-size: 12px;
+            color: var(--text-4);
+            text-align: right;
+            flex-shrink: 0
+        }
+
+        .section {
+            display: none
+        }
+
+        .section.active {
+            display: block
+        }
+
+        /* ═══════════════ CARDS & PANELS ═══════════════ */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow)
+        }
+
+        .card-hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text)
+        }
+
+        .card-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: .03em
+        }
+
+        .card-badge::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse 2s infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .3
+            }
+        }
+
+        /* Table inside card scrolls horizontally without breaking card padding */
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch
+        }
+
+        .table-wrap::-webkit-scrollbar {
+            height: 6px
+        }
+
+        .table-wrap::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px
+        }
+
+        /* ═══════════════ STAT CARDS ═══════════════ */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px
+        }
+
+        .stat {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            box-shadow: var(--shadow)
+        }
+
+        .stat .lbl {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-4);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 6px
+        }
+
+        .stat .val {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            line-height: 1.2
+        }
+
+        .stat .val.green {
+            color: var(--primary)
+        }
+
+        .stat .val.amber {
+            color: var(--warn)
+        }
+
+        .stat .val.red {
+            color: var(--danger)
+        }
+
+        .stat .sub {
+            font-size: 11px;
+            color: var(--text-4);
+            margin-top: 4px
+        }
+
+        /* ═══════════════ TABLES ═══════════════ */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px
+        }
+
+        thead th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-4);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+            background: var(--surface-2)
+        }
+
+        thead th:first-child {
+            border-radius: var(--radius-sm) 0 0 0
+        }
+
+        thead th:last-child {
+            border-radius: 0 var(--radius-sm) 0 0
+        }
+
+        tbody td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-2)
+        }
+
+        tbody tr:hover {
+            background: var(--surface-2)
+        }
+
+        tbody tr:nth-child(even) {
+            background: var(--bg)
+        }
+
+        tbody tr:nth-child(even):hover {
+            background: var(--surface-2)
+        }
+
+        .empty-td {
+            text-align: center;
+            color: var(--text-4);
+            padding: 40px 12px;
+            font-size: 13px
+        }
+
+        /* ═══════════════ CHIPS & BADGES ═══════════════ */
+        .chip {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            line-height: 1.4;
+            white-space: nowrap
+        }
+
+        .chip-green {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary-border)
+        }
+
+        .chip-amber {
+            background: var(--warn-light);
+            color: var(--warn);
+            border: 1px solid var(--warn-border)
+        }
+
+        .chip-blue {
+            background: var(--info-light);
+            color: var(--info);
+            border: 1px solid var(--info-border)
+        }
+
+        .chip-red {
+            background: var(--danger-light);
+            color: var(--danger);
+            border: 1px solid var(--danger-border)
+        }
+
+        .dir-in {
+            color: var(--primary);
+            font-weight: 700
+        }
+
+        .dir-out {
+            color: var(--warn);
+            font-weight: 700
+        }
+
+        .qty-low {
+            color: var(--danger);
+            font-weight: 700
+        }
+
+        /* ═══════════════ BUTTONS ═══════════════ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-family: var(--font);
+            transition: all .15s;
+            line-height: 1;
+            white-space: nowrap
+        }
+
+        .btn-p {
+            background: var(--primary);
+            color: #fff
+        }
+
+        .btn-p:hover {
+            background: var(--primary-hover)
+        }
+
+        .btn-s {
+            background: var(--surface);
+            color: var(--text-2);
+            border: 1px solid var(--border)
+        }
+
+        .btn-s:hover {
+            border-color: var(--primary-border);
+            background: var(--primary-light)
+        }
+
+        .btn-d {
+            background: var(--danger-light);
+            color: var(--danger);
+            border: 1px solid var(--danger-border)
+        }
+
+        .btn-d:hover {
+            background: var(--danger);
+            color: #fff
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 12px
+        }
+
+        .btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            pointer-events: none
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        /* Action buttons in tables */
+        .act {
+            display: flex;
+            gap: 4px
+        }
+
+        .act-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-xs);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: .15s;
+            color: var(--text-3);
+            flex-shrink: 0
+        }
+
+        .act-btn:hover {
+            border-color: var(--primary-border);
+            background: var(--primary-light);
+            color: var(--primary)
+        }
+
+        .act-btn.danger:hover {
+            border-color: var(--danger-border);
+            background: var(--danger-light);
+            color: var(--danger)
+        }
+
+        /* ═══════════════ FORMS ═══════════════ */
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow)
+        }
+
+        .form-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light)
+        }
+
+        .row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px
+        }
+
+        .row:last-of-type {
+            margin-bottom: 20px
+        }
+
+        .field {
+            flex: 1;
+            min-width: 0
+        }
+
+        .field label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 6px
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 16px;
+            /* 16px avoids iOS zoom-on-focus */
+            font-family: var(--font);
+            outline: none;
+            transition: .2s
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+            background: var(--surface)
+        }
+
+        .field input::placeholder {
+            color: var(--text-4)
+        }
+
+        /* ═══════════════ ALERTS ═══════════════ */
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start
+        }
+
+        .alert.warn {
+            background: var(--warn-light);
+            border: 1px solid var(--warn-border);
+            color: #92400e
+        }
+
+        .alert.info {
+            background: var(--info-light);
+            border: 1px solid var(--info-border);
+            color: #1e40af
+        }
+
+        .alert.success {
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            color: #065f46
+        }
+
+        .alert .a-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+            margin-top: 1px
+        }
+
+        .alert .a-title {
+            font-weight: 700;
+            margin-bottom: 2px
+        }
+
+        /* ═══════════════ VOICE PANEL ═══════════════ */
+        .voice {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column
+        }
+
+        .v-hdr {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .v-av {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            border: 2px solid var(--primary-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0
+        }
+
+        .v-hdr .v-n {
+            font-size: 14px;
+            font-weight: 600
+        }
+
+        .v-hdr .v-s {
+            font-size: 11px;
+            color: var(--primary)
+        }
+
+        .v-msgs {
+            height: 280px;
+            overflow-y: auto;
+            padding: 16px;
+            scroll-behavior: smooth
+        }
+
+        .v-msgs::-webkit-scrollbar {
+            width: 3px
+        }
+
+        .v-msgs::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px
+        }
+
+        .vm {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            animation: fadeUp .3s ease
+        }
+
+        .vm.user {
+            flex-direction: row-reverse
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .vm-b {
+            max-width: 80%;
+            padding: 10px 14px;
+            font-size: 13px;
+            line-height: 1.6;
+            border-radius: var(--radius)
+        }
+
+        .vm.ai .vm-b {
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            border-top-left-radius: 4px
+        }
+
+        .vm.user .vm-b {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-top-right-radius: 4px;
+            color: var(--text-3)
+        }
+
+        .vm-badge {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--warn);
+            background: var(--warn-light);
+            border: 1px solid var(--warn-border);
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-bottom: 4px;
+            display: inline-block
+        }
+
+        .v-toast {
+            text-align: center;
+            margin: 8px 0
+        }
+
+        .v-toast span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            border-radius: 20px;
+            padding: 4px 12px
+        }
+
+        .v-dots {
+            display: none;
+            gap: 4px;
+            padding: 10px 14px;
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            border-radius: var(--radius);
+            border-top-left-radius: 4px;
+            width: fit-content
+        }
+
+        .v-dots.show {
+            display: flex
+        }
+
+        .v-dots i {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary-border);
+            animation: dot 1.4s infinite
+        }
+
+        .v-dots i:nth-child(2) {
+            animation-delay: .16s
+        }
+
+        .v-dots i:nth-child(3) {
+            animation-delay: .32s
+        }
+
+        @keyframes dot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: .4
+            }
+
+            30% {
+                transform: translateY(-5px);
+                opacity: 1
+            }
+        }
+
+        .v-input {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .mic {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--primary-border);
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: .25s;
+            flex-shrink: 0
+        }
+
+        .mic:hover {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff
+        }
+
+        .mic.rec {
+            border-color: var(--danger);
+            color: #fff;
+            background: var(--danger);
+            animation: micPulse 1.5s infinite
+        }
+
+        @keyframes micPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, .3)
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(220, 38, 38, 0)
+            }
+        }
+
+        .v-input input {
+            flex: 1;
+            min-width: 0;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 10px 16px;
+            color: var(--text);
+            font-size: 16px;
+            font-family: var(--font);
+            outline: none
+        }
+
+        .v-input input:focus {
+            border-color: var(--primary)
+        }
+
+        .v-send {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: .2s;
+            flex-shrink: 0
+        }
+
+        .v-send.v {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        .rec-bar {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            flex: 1
+        }
+
+        .rec-bar.on {
+            display: flex
+        }
+
+        .rec-bar .wave {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            height: 20px
+        }
+
+        .rec-bar .wave i {
+            width: 3px;
+            background: var(--danger);
+            border-radius: 2px;
+            animation: wv .8s ease-in-out infinite;
+            display: block
+        }
+
+        .rec-bar .wave i:nth-child(1) {
+            height: 4px
+        }
+
+        .rec-bar .wave i:nth-child(2) {
+            height: 10px;
+            animation-delay: .1s
+        }
+
+        .rec-bar .wave i:nth-child(3) {
+            height: 16px;
+            animation-delay: .2s
+        }
+
+        .rec-bar .wave i:nth-child(4) {
+            height: 12px;
+            animation-delay: .3s
+        }
+
+        .rec-bar .wave i:nth-child(5) {
+            height: 18px;
+            animation-delay: .4s
+        }
+
+        @keyframes wv {
+
+            0%,
+            100% {
+                transform: scaleY(.3)
+            }
+
+            50% {
+                transform: scaleY(1)
+            }
+        }
+
+        .rec-bar .tmr {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--danger)
+        }
+
+        /* ═══════════════ CHARTS ═══════════════ */
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow)
+        }
+
+        /* Wrapper gives the canvas a real height so the chart fills the width
+       fully and stays professional at any screen size */
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 340px
+        }
+
+        .chart-wrap canvas {
+            width: 100% !important;
+            height: 100% !important
+        }
+
+        /* ═══════════════ TABS ═══════════════ */
+        .tabs {
+            display: inline-flex;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            padding: 3px;
+            gap: 2px;
+            margin-bottom: 20px;
+            max-width: 100%
+        }
+
+        .tab {
+            padding: 8px 20px;
+            border-radius: var(--radius-xs);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--text-3);
+            font-family: var(--font);
+            transition: .15s;
+            white-space: nowrap
+        }
+
+        .tab.active {
+            background: var(--surface);
+            color: var(--primary);
+            box-shadow: var(--shadow)
+        }
+
+        /* ═══════════════ BILL ═══════════════ */
+        .bill {
+            background: var(--surface);
+            border: 2px solid var(--primary-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-top: 16px
+        }
+
+        .bill h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .bill-r {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px dashed var(--border-light);
+            color: var(--text-2)
+        }
+
+        .bill-r span:last-child {
+            text-align: right
+        }
+
+        .bill-r:last-child {
+            border: none;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text);
+            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 2px solid var(--border)
+        }
+
+        /* ═══════════════ MODAL ═══════════════ */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .5);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            padding: 16px
+        }
+
+        .modal-bg.show {
+            display: flex
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            max-width: 720px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .2)
+        }
+
+        .modal-hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light)
+        }
+
+        .modal-hdr h3 {
+            font-size: 16px;
+            font-weight: 700;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-xs);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-3);
+            flex-shrink: 0
+        }
+
+        .modal-close:hover {
+            background: var(--danger-light);
+            color: var(--danger);
+            border-color: var(--danger-border)
+        }
+
+        .modal .table-wrap {
+            margin: 0 -8px
+        }
+
+        /* ═══════════════ FILTER BAR ═══════════════ */
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end
+        }
+
+        .filters .field {
+            min-width: 150px;
+            flex: 1;
+            max-width: 220px
+        }
+
+        .filters .btn {
+            flex-shrink: 0
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start
+        }
+
+        /* ═══════════════ RESPONSIVE — TABLET / MOBILE ═══════════════ */
+        @media(max-width:768px) {
+            .m-topbar {
+                display: flex
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: var(--shadow-md)
+            }
+
+            .sidebar.open {
+                transform: translateX(0)
+            }
+
+            .main {
+                margin-left: 0;
+                padding: calc(64px + env(safe-area-inset-top)) 16px 32px
+            }
+
+            .page-hdr {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+                margin-bottom: 18px
+            }
+
+            .page-hdr h1 {
+                font-size: 18px
+            }
+
+            .page-hdr .clock {
+                text-align: left
+            }
+
+            .two-col {
+                grid-template-columns: 1fr
+            }
+
+            .stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-bottom: 18px
+            }
+
+            .stat {
+                padding: 14px 16px
+            }
+
+            .stat .val {
+                font-size: 19px
+            }
+
+            /* Forms stack cleanly */
+            .row {
+                flex-direction: column;
+                gap: 14px;
+                align-items: stretch !important
+            }
+
+            .field {
+                min-width: 0 !important
+            }
+
+            /* THE KEY FIX: filters were aligning right & shrinking. Now full-width stack */
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px
+            }
+
+            .filters .field {
+                max-width: none;
+                min-width: 0;
+                width: 100%
+            }
+
+            .filters .btn {
+                width: 100%
+            }
+
+            /* Monthly: kill the inline max-width / flex-end on its picker row */
+            #sec-monthly .form-card .row {
+                align-items: stretch !important
+            }
+
+            #sec-monthly .form-card .field {
+                max-width: none !important
+            }
+
+            #sec-monthly .btn-row {
+                width: 100%
+            }
+
+            #sec-monthly .btn-row .btn {
+                flex: 1
+            }
+
+            /* Cards: let inner tables scroll, keep padding intact */
+            .card {
+                padding: 16px
+            }
+
+            .form-card {
+                padding: 18px
+            }
+
+            .card>table,
+            .card .table-wrap table {
+                min-width: 600px
+            }
+
+            table {
+                font-size: 12px
+            }
+
+            thead th {
+                padding: 8px 10px;
+                font-size: 10px
+            }
+
+            tbody td {
+                padding: 8px 10px
+            }
+
+            .v-msgs {
+                height: 240px
+            }
+
+            /* Chart fills width and keeps a tall, readable height */
+            .chart-wrap {
+                height: 300px
+            }
+
+            .modal {
+                padding: 18px
+            }
+
+            .tabs {
+                width: 100%
+            }
+
+            .tab {
+                flex: 1;
+                padding: 10px 12px;
+                text-align: center
+            }
+        }
+
+        @media(max-width:400px) {
+            .main {
+                padding: calc(62px + env(safe-area-inset-top)) 12px 24px
+            }
+
+            .stats {
+                gap: 10px
+            }
+
+            .stat {
+                padding: 12px 14px
+            }
+
+            .stat .val {
+                font-size: 17px
+            }
+
+            .card,
+            .form-card {
+                padding: 14px
+            }
+
+            .chart-card {
+                padding: 14px
+            }
+
+            .chart-wrap {
+                height: 270px
+            }
+
+            table {
+                font-size: 11px
+            }
+
+            .card>table,
+            .card .table-wrap table {
+                min-width: 540px
+            }
+
+            .v-msgs {
+                height: 220px
+            }
+        }
+
+        audio {
+            display: none
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Mobile top bar -->
+    <div class="m-topbar">
+        <div class="m-brand">
+            <img style="height: 30px;" src="{{ url_for('static', filename='img/Logo_Icon.png') }}" alt="Logo">
+            <div>
+                <img style="height: 20px;" src="{{ url_for('static', filename='img/Logo_Name.png') }}" alt="InvenTree">
+                <div class="m-sub" id="mobShop">—</div>
+            </div>
+        </div>
+        <button class="m-menu" onclick="toggleSB()" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+    <div class="overlay" id="overlay" onclick="toggleSB()"></div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="s-brand">
+            <img style="width: 50px; height: 50px;" src="{{ url_for('static', filename='img/Logo_Icon.png') }}" alt="Logo">
+            <div>
+                <img style="height: 25px;" src="{{ url_for('static', filename='img/Logo_Name.png') }}" alt="InvenTree">
+                <p id="shopName">—</p>
+            </div>
+        </div>
+        <div class="s-nav">
+            <div class="s-group">Main</div>
+            <div class="s-item active" data-p="overview" onclick="go('overview')"><span class="ico">📊</span>Dashboard
+            </div>
+            <div class="s-item" data-p="addstock" onclick="go('addstock')"><span class="ico">📥</span>Purchase / Add
+                Stock
+            </div>
+            <div class="s-item" data-p="stock" onclick="go('stock')"><span class="ico">📦</span>Stock List</div>
+            <div class="s-item" data-p="monthly" onclick="go('monthly')"><span class="ico">📅</span>Monthly Stock</div>
+            <div class="s-group">Sales</div>
+            <div class="s-item" data-p="newsale" onclick="go('newsale')"><span class="ico">🛒</span>Sell Stock</div>
+            <div class="s-item" data-p="sales" onclick="go('sales')"><span class="ico">📋</span>Sales History</div>
+            <div class="s-item" data-p="trends" onclick="go('trends')"><span class="ico">📈</span>Sales Trends</div>
+            <div class="s-group">Tracking</div>
+            <div class="s-item" data-p="movements" onclick="go('movements')"><span class="ico">🔄</span>Stock Movements
+            </div>
+            <div class="s-item" data-p="contacts" onclick="go('contacts')"><span class="ico">👥</span>Suppliers & Buyers
+            </div>
+            <div class="s-group" id="admGrp" style="display:none">Admin</div>
+            <div class="s-item" data-p="team" id="navTeam" style="display:none" onclick="go('team')"><span
+                    class="ico">🏢</span>Team</div>
+            <div class="s-item" data-p="allshops" id="navShops" style="display:none" onclick="go('allshops')"><span
+                    class="ico">🌐</span>All Shops</div>
+        </div>
+        <div class="s-user">
+            <div class="s-user-av">👤</div>
+            <div class="s-user-info">
+                <div class="n" id="uName">—</div>
+                <div class="r" id="uRole">—</div>
+            </div>
+            <button class="s-logout" onclick="logout()" title="Logout">⏻</button>
+        </div>
+    </nav>
+    <!-- Main content -->
+    <div class="main mobile_top_margin">
+        <div class="page-hdr">
+            <h1 id="pageTitle">Dashboard</h1>
+            <div class="clock" id="clock"></div>
+        </div>
+
+        <!-- ═══ OVERVIEW ═══ -->
+        <div class="section active" id="sec-overview">
+            <div class="stats" id="statsGrid"></div>
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">🤖 AI Insights</span><button class="btn btn-sm btn-s"
+                        onclick="loadAlerts()">Refresh</button></div>
+                <div id="alertsList">
+                    <div class="empty-td">Loading...</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">Low Stock Alerts</span><span
+                        class="card-badge">LIVE</span></div>
+                <div id="lowStockTbl"></div>
+            </div>
+        </div>
+
+        <!-- ═══ ADD STOCK ═══ -->
+        <div class="section" id="sec-addstock">
+            <div class="two-col">
+                <div class="voice">
+                    <div class="v-hdr">
+                        <div class="v-av">🤖</div>
+                        <div>
+                            <div class="v-n">Stock Assistant</div>
+                            <div class="v-s" id="vStatus">Ready — Mic press karein</div>
+                        </div>
+                    </div>
+                    <div class="v-msgs" id="vMsgs">
+                        <div style="text-align:center;padding:40px 16px;color:var(--text-4)">
+                            <div style="font-size:32px;margin-bottom:10px">👋</div>
+                            <div style="font-size:14px;font-weight:600;margin-bottom:4px">Mic press karke bolo</div>
+                            <div style="font-size:12px">"Mehta dealer se 40 Boult speaker aaye, 500 ka liya"</div>
+                        </div>
+                        <div class="v-dots" id="vTyping"><i></i><i></i><i></i></div>
+                    </div>
+                    <div class="v-input"><button class="mic" id="micBtn" onclick="toggleMic()">🎤</button>
+                        <div class="rec-bar" id="recBar">
+                            <div class="wave"><i></i><i></i><i></i><i></i><i></i></div><span class="tmr"
+                                id="recTmr">0:00</span>
+                        </div>
+                        <input type="text" id="vReply" placeholder="Type reply..."><button class="v-send" id="vSend"
+                            onclick="doVTxt()">➤</button>
+                    </div>
+                </div>
+                <div class="form-card">
+                    <div class="form-title">Manual Stock Purchase</div>
+                    <div class="row">
+                        <div class="field"><label>Brand</label><input id="mBrand" placeholder="e.g. Boult"></div>
+                        <div class="field"><label>Product Type</label><input id="mType" placeholder="e.g. Speaker">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="field"><label>Model No</label><input id="mModel" placeholder="Optional"></div>
+                        <div class="field"><label>Quantity</label><input id="mQty" type="number" placeholder="0"></div>
+                    </div>
+                    <div class="row">
+                        <div class="field"><label>Purchase Price/Unit ₹</label><input id="mPP" type="number"
+                                placeholder="Cost">
+                        </div>
+                        <div class="field"><label>Sale Price/Unit ₹</label><input id="mSP" type="number"
+                                placeholder="Selling">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="field"><label>Supplier</label><select id="mSup">
+                                <option value="">Select</option>
+                            </select></div>
+                        <div class="field"><label>Or New Supplier</label><input id="mSupN" placeholder="Name"></div>
+                    </div>
+                    <div class="row">
+                        <div class="field"><label>Payment Mode</label><select id="mPay">
+                                <option value="cash">Cash</option>
+                                <option value="upi">UPI</option>
+                                <option value="credit">Credit</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="cheque">Cheque</option>
+                            </select></div>
+                        <div class="field"><label>Invoice No</label><input id="mInv" placeholder="Bill number"></div>
+                    </div>
+                    <div class="row">
+                        <div class="field"><label>Invoice Date</label><input id="mInvD" type="date"></div>
+                        <div class="field"><label>Invoice Total ₹</label><input id="mInvT" type="number"
+                                placeholder="Total"></div>
+                    </div>
+                    <div class="row">
+                        <div class="field"><label>Invoice Notes</label><input id="mInvN"
+                                placeholder="GST, discount etc."></div>
+                        <div class="field"><label>Category</label><input id="mCat" placeholder="e.g. Audio"></div>
+                    </div>
+                    <div class="btn-row"><button class="btn btn-p" onclick="manualAdd()">Add to Inventory</button><span
+                            id="addMsg" style="font-size:13px;color:var(--primary)"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ STOCK LIST ═══ -->
+        <div class="section" id="sec-stock">
+            <div class="filters">
+                <div class="field"><label>Search</label><input type="search" id="sSearch"
+                        placeholder="Brand, product, category..." oninput="renderP()"></div>
+                <div class="field"><label>Brand</label><select id="fBrand" onchange="renderP()">
+                        <option value="">All</option>
+                    </select></div>
+                <div class="field"><label>Category</label><select id="fCat" onchange="renderP()">
+                        <option value="">All</option>
+                    </select></div>
+                <button class="btn btn-sm btn-s" onclick="window.open('/api/export/stock','_blank')">📥 Export
+                    CSV</button>
+            </div>
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">Current Stock</span><span class="card-badge">LIVE</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Product</th>
+                                <th>Model</th>
+                                <th>Qty</th>
+                                <th>Cost</th>
+                                <th>Sale</th>
+                                <th>Margin</th>
+                                <th>Category</th>
+                                <th>Supplier</th>
+                                <th>Alert</th>
+                                <th style="width:100px">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockTb">
+                            <tr>
+                                <td colspan="11" class="empty-td">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ MONTHLY ═══ -->
+        <div class="section" id="sec-monthly">
+            <div class="form-card" style="padding:16px 20px">
+                <div class="row" style="margin-bottom:0;align-items:flex-end">
+                    <div class="field" style="max-width:200px"><label>Select Month</label><input type="month"
+                            id="mMonth" onchange="loadMA()"></div>
+                    <div class="btn-row"><button class="btn btn-sm btn-s" onclick="expM('stock')">📥 Stock
+                            In</button><button class="btn btn-sm btn-s" onclick="expM('sales')">📥 Sales Out</button>
+                    </div>
+                </div>
+            </div>
+            <div class="stats" id="mSummary"></div>
+            <div class="tabs"><button class="tab active" id="mtIn" onclick="mTab('in')">📥 Stock In</button><button
+                    class="tab" id="mtOut" onclick="mTab('out')">📤 Sold Out</button></div>
+            <div id="mInSec">
+                <div class="card">
+                    <div class="card-hdr"><span class="card-title">Stock Purchased (IN)</span></div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Brand</th>
+                                    <th>Product</th>
+                                    <th>Model</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Supplier</th>
+                                    <th>Payment</th>
+                                    <th>Invoice</th>
+                                    <th>By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mInTb">
+                                <tr>
+                                    <td colspan="10" class="empty-td">Select month</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="mOutSec" style="display:none">
+                <div class="card">
+                    <div class="card-hdr"><span class="card-title">Stock Sold (OUT)</span></div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                    <th>Buyer</th>
+                                    <th>Type</th>
+                                    <th>Payment</th>
+                                    <th>By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mOutTb">
+                                <tr>
+                                    <td colspan="9" class="empty-td">Select month</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SELL STOCK ═══ -->
+        <div class="section" id="sec-newsale">
+            <div class="form-card">
+                <div class="form-title">Sell Stock</div>
+                <div class="row">
+                    <div class="field" style="flex:2"><label>Product</label><select id="slProd">
+                            <option value="">Select...</option>
+                        </select></div>
+                    <div class="field"><label>Available</label><input id="slAvail" readonly
+                            style="background:var(--bg)"></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Quantity</label><input id="slQty" type="number" placeholder="0" min="1">
+                    </div>
+                    <div class="field"><label>Sale Price/Unit ₹</label><input id="slPrice" type="number"
+                            placeholder="0"></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Sale Type</label><select id="slType">
+                            <option value="retail">Retail (Customer)</option>
+                            <option value="wholesale">Wholesale (Retailer)</option>
+                        </select></div>
+                    <div class="field"><label>Payment</label><select id="slPay">
+                            <option value="cash">Cash</option>
+                            <option value="upi">UPI</option>
+                            <option value="card">Card</option>
+                            <option value="credit">Credit</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                        </select></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Customer/Retailer</label><select id="slContact">
+                            <option value="">Walk-in</option>
+                        </select></div>
+                    <div class="field"><label>Or Name</label><input id="slCName" placeholder="Name"></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Notes</label><input id="slNotes" placeholder="Optional"></div>
+                </div>
+                <div class="btn-row"><button class="btn btn-p" onclick="doSale()">Record Sale</button><span id="slMsg"
+                        style="font-size:13px;color:var(--primary)"></span></div>
+            </div>
+            <div id="billArea"></div>
+        </div>
+
+        <!-- ═══ SALES HISTORY ═══ -->
+        <div class="section" id="sec-sales">
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">Sales History</span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Type</th>
+                                <th>Buyer</th>
+                                <th>Payment</th>
+                                <th>By</th>
+                                <th>Bill</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTb">
+                            <tr>
+                                <td colspan="10" class="empty-td">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TRENDS ═══ -->
+        <div class="section" id="sec-trends">
+            <div class="filters">
+                <div class="field"><label>Product</label><select id="trProd" onchange="loadTr()">
+                        <option value="">All</option>
+                    </select></div>
+                <div class="field" style="max-width:120px"><label>Days</label><select id="trDays" onchange="loadTr()">
+                        <option value="7">7</option>
+                        <option value="30" selected>30</option>
+                        <option value="90">90</option>
+                    </select></div>
+            </div>
+            <div class="chart-card">
+                <div class="card-hdr"><span class="card-title">Sales Trend</span></div>
+                <div class="chart-wrap"><canvas id="trChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- ═══ MOVEMENTS ═══ -->
+        <div class="section" id="sec-movements">
+            <div class="filters">
+                <div class="field"><label>From</label><input type="date" id="mvF"></div>
+                <div class="field"><label>To</label><input type="date" id="mvT"></div>
+                <button class="btn btn-sm btn-s" onclick="loadMv()">Apply Filter</button>
+            </div>
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">Stock Movements</span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Dir</th>
+                                <th>Brand</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>By</th>
+                                <th>Contact</th>
+                                <th>Payment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mvTb">
+                            <tr>
+                                <td colspan="9" class="empty-td">Select dates & apply</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ CONTACTS ═══ -->
+        <div class="section" id="sec-contacts">
+            <div class="form-card">
+                <div class="form-title">Add Supplier / Customer / Retailer</div>
+                <div class="row">
+                    <div class="field"><label>Name</label><input id="cName" placeholder="Name"></div>
+                    <div class="field"><label>Type</label><select id="cType">
+                            <option value="supplier">Supplier</option>
+                            <option value="customer">Customer</option>
+                            <option value="retailer">Retailer</option>
+                        </select></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Phone</label><input id="cPhone" placeholder="Phone"></div>
+                    <div class="field"><label>GST No</label><input id="cGst" placeholder="Optional"></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Address</label><input id="cAddr" placeholder="Address"></div>
+                </div>
+                <button class="btn btn-p" onclick="addC()">Add Contact</button>
+            </div>
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">Contacts</span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Phone</th>
+                                <th>GST</th>
+                                <th>Address</th>
+                                <th style="width:80px">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cTb">
+                            <tr>
+                                <td colspan="6" class="empty-td">No contacts</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TEAM ═══ -->
+        <div class="section" id="sec-team">
+            <div class="form-card">
+                <div class="form-title">Register Employee</div>
+                <div class="row">
+                    <div class="field"><label>Full Name</label><input id="eName" placeholder="Name"></div>
+                    <div class="field"><label>Role</label><select id="eRole">
+                            <option value="employee">Employee</option>
+                            <option value="admin">Manager</option>
+                        </select></div>
+                </div>
+                <div class="row">
+                    <div class="field"><label>Username</label><input id="eUser" placeholder="Username"></div>
+                    <div class="field"><label>Password</label><input id="ePass" type="password" placeholder="Password">
+                    </div>
+                </div>
+                <div class="btn-row"><button class="btn btn-p" onclick="regEmp()">Register</button><span id="eMsg"
+                        style="font-size:13px"></span></div>
+            </div>
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">Team</span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teamTb">
+                            <tr>
+                                <td colspan="5" class="empty-td">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ ALL SHOPS ═══ -->
+        <div class="section" id="sec-allshops">
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">All Shops</span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Address</th>
+                                <th>Phone</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shopsTb"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-hdr"><span class="card-title">All Users</span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Shop</th>
+                                <th>Active</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auTb"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-bg" id="modal">
+        <div class="modal">
+            <div class="modal-hdr">
+                <h3 id="mTitle">—</h3><button class="modal-close" onclick="closeM()">✕</button>
+            </div>
+            <div id="mBody"></div>
+        </div>
+    </div>
+
+    <audio id="ttsA"></audio>
+    <script>
+        let U = null, S = null, P = [], TC = null, VS = null, VM = 'initial', MR = null, IR = false, RI = null, RS = 0;
+        const io2 = io(); io2.on('inventory_update', () => { loadP(); loadSt() });
+
+        function toggleSB() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show') }
+
+        async function init() {
+            try {
+                const r = await F('/api/auth/me'); const d = await r.json(); if (!r.ok) return location.href = '/login.html';
+                U = d.user; S = d.shop;
+                document.getElementById('uName').textContent = U.full_name; document.getElementById('uRole').textContent = U.role;
+                const sn = S ? S.name : 'SuperAdmin'; document.getElementById('shopName').textContent = sn; document.getElementById('mobShop').textContent = sn;
+                if (['admin', 'superadmin'].includes(U.role)) { document.getElementById('admGrp').style.display = ''; document.getElementById('navTeam').style.display = '' }
+                if (U.role === 'superadmin') document.getElementById('navShops').style.display = '';
+                loadSt(); loadP(); loadAlerts();
+                const tk = () => document.getElementById('clock').textContent = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); tk(); setInterval(tk, 60000)
+            } catch (e) { location.href = '/login.html' }
+        }
+
+        async function F(u, o = {}) { const r = await fetch(u, { ...o, credentials: 'same-origin' }); if (r.status === 401) location.href = '/login.html'; return r }
+        async function logout() { await fetch('/api/auth/logout', { method: 'POST' }); location.href = '/login.html' }
+
+        function go(p) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.s-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('sec-' + p)?.classList.add('active');
+            document.querySelector(`.s-item[data-p="${p}"]`)?.classList.add('active');
+            const T = { overview: 'Dashboard', addstock: 'Purchase / Add Stock', stock: 'Stock List', monthly: 'Monthly Stock', newsale: 'Sell Stock', sales: 'Sales History', trends: 'Sales Trends', movements: 'Stock Movements', contacts: 'Suppliers & Buyers', team: 'Team', allshops: 'All Shops' };
+            document.getElementById('pageTitle').textContent = T[p] || 'Dashboard';
+            if (p === 'stock') loadP(); if (p === 'sales') loadSales(); if (p === 'trends') { popTr(); loadTr() }
+            if (p === 'movements') loadMv(); if (p === 'contacts') loadC(); if (p === 'team') loadTeam();
+            if (p === 'allshops') loadAS(); if (p === 'newsale') popSale(); if (p === 'addstock') popSup();
+            if (p === 'overview') { loadSt(); loadAlerts() } if (p === 'monthly') initM();
+            document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show');
+            window.scrollTo(0, 0)
+        }
+
+        // ═══ STATS ═══
+        async function loadSt() {
+            try {
+                const r = await F('/api/dashboard/stats'); const s = await r.json();
+                document.getElementById('statsGrid').innerHTML = `
+    <div class="stat"><div class="lbl">Products</div><div class="val green">${s.total_products}</div></div>
+    <div class="stat"><div class="lbl">Total Units</div><div class="val">${s.total_quantity}</div></div>
+    <div class="stat"><div class="lbl">Low Stock</div><div class="val ${s.low_stock_alerts ? 'red' : ''}">${s.low_stock_alerts}</div></div>
+    <div class="stat"><div class="lbl">Today Revenue</div><div class="val amber">₹${(s.today_revenue || 0).toLocaleString()}</div><div class="sub">${s.today_units_sold} units</div></div>
+    <div class="stat"><div class="lbl">Stock Cost</div><div class="val">₹${(s.stock_cost_value || 0).toLocaleString()}</div></div>
+    <div class="stat"><div class="lbl">Total Profit</div><div class="val ${s.total_profit >= 0 ? 'green' : 'red'}">₹${(s.total_profit || 0).toLocaleString()}</div><div class="sub">Revenue − Cost</div></div>`;
+                const lr = await F('/api/dashboard/low-stock'); const low = await lr.json();
+                document.getElementById('lowStockTbl').innerHTML = !low.length ? '<div class="empty-td">All stock healthy ✅</div>' :
+                    `<div class="table-wrap"><table><thead><tr><th>Brand</th><th>Product</th><th>Qty</th><th>Alert</th></tr></thead><tbody>${low.map(p => `<tr><td>${H(p.brand)}</td><td>${H(p.product_type)}</td><td class="qty-low">${p.quantity}</td><td>${p.min_stock_alert}</td></tr>`).join('')}</tbody></table></div>`
+            } catch (e) { }
+        }
+
+        async function loadAlerts() {
+            document.getElementById('alertsList').innerHTML = '<div class="empty-td">AI analyzing... 🤔</div>';
+            try {
+                const r = await F('/api/dashboard/ai-alerts'); const a = await r.json();
+                document.getElementById('alertsList').innerHTML = !a.length ? '<div class="empty-td">No alerts right now</div>' :
+                    a.map(x => `<div class="alert ${x.type === 'warning' ? 'warn' : x.type}"><span class="a-icon">${x.type === 'warning' ? '⚠️' : x.type === 'success' ? '✅' : 'ℹ️'}</span><div><div class="a-title">${H(x.title)}</div>${H(x.message)}</div></div>`).join('')
+            } catch (e) { document.getElementById('alertsList').innerHTML = '<div class="empty-td">AI unavailable</div>' }
+        }
+
+        // ═══ PRODUCTS ═══
+        async function loadP() { try { const r = await F('/api/products?detailed=1'); P = await r.json(); renderP(); popFilt() } catch (e) { } }
+        function popFilt() {
+            const b = [...new Set(P.map(p => p.brand))].sort(); const c = [...new Set(P.map(p => p.category).filter(Boolean))].sort();
+            document.getElementById('fBrand').innerHTML = '<option value="">All Brands</option>' + b.map(x => `<option>${H(x)}</option>`).join('');
+            document.getElementById('fCat').innerHTML = '<option value="">All Categories</option>' + c.map(x => `<option>${H(x)}</option>`).join('')
+        }
+        function renderP() {
+            const s = (document.getElementById('sSearch')?.value || '').toLowerCase(), fb = document.getElementById('fBrand')?.value || '', fc = document.getElementById('fCat')?.value || '';
+            const f = P.filter(p => {
+                if (s && !`${p.brand} ${p.product_type} ${p.model_no} ${p.category}`.toLowerCase().includes(s)) return false;
+                if (fb && p.brand !== fb) return false; if (fc && p.category !== fc) return false; return true
+            });
+            const ce = ['admin', 'superadmin'].includes(U?.role);
+            if (!f.length) { document.getElementById('stockTb').innerHTML = '<tr><td colspan="11" class="empty-td">No products found</td></tr>'; return }
+            document.getElementById('stockTb').innerHTML = f.map(p => {
+                const mg = p.sale_price && p.purchase_price ? Math.round(((p.sale_price - p.purchase_price) / p.purchase_price) * 100) : null;
+                return `<tr data-id="${p.id}"><td>${H(p.brand)}</td><td>${H(p.product_type)}</td><td>${H(p.model_no || '—')}</td>
+    <td class="${p.quantity < (p.min_stock_alert || 5) ? 'qty-low' : ''}">${p.quantity}</td>
+    <td>${p.purchase_price ? '₹' + p.purchase_price : '—'}</td><td>${p.sale_price ? '₹' + p.sale_price : '—'}</td>
+    <td>${mg !== null ? `<span class="chip ${mg > 0 ? 'chip-green' : 'chip-red'}">${mg}%</span>` : '—'}</td>
+    <td><span class="chip chip-green">${H(p.category || '—')}</span></td>
+    <td style="font-size:12px">${H(p.last_supplier || '—')}</td><td>${p.min_stock_alert || 5}</td>
+    <td><div class="act">
+      <button class="act-btn" onclick="showHist(${p.id},'${H(p.brand)} ${H(p.product_type)}')" title="History">📋</button>
+      ${ce ? `<button class="act-btn" onclick="editR(this)" title="Edit">✏️</button><button class="act-btn danger" onclick="delP(${p.id})" title="Delete">🗑</button>` : ''}
+    </div></td></tr>`}).join('')
+        }
+
+         function editR(btn) {
+            const tr = btn.closest('tr'); const id = tr.dataset.id;
+            // index → DB field. null = editable nahi (Margin computed hai, Actions skip).
+           const flds = ['brand', 'product_type', 'model_no', 'quantity', 'purchase_price', 'sale_price', null, 'category', 'supplier', 'min_stock_alert'];
+            const tds = tr.querySelectorAll('td');
+            flds.forEach((f, i) => {
+                if (!f || i >= tds.length) return; const td = tds[i]; if (td.querySelector('input')) return;
+                const raw = td.textContent.replace('₹', '').replace('—', '').replace('%', '').trim();
+                const inp = document.createElement('input'); inp.value = raw;
+                inp.style.cssText = 'width:90px;padding:4px 6px;font-size:12px;border:1px solid var(--primary);border-radius:4px;background:var(--surface);outline:none';
+                td.textContent = ''; td.appendChild(inp);
+                inp.addEventListener('blur', async () => {
+                    await F(`/api/products/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field: f, value: inp.value.trim() }) });
+                });
+                inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur() })
+            });
+            setTimeout(() => { tr.addEventListener('focusout', () => setTimeout(() => { if (!tr.querySelector('input:focus')) loadP() }, 200), { once: true }) }, 100)
+        }
+        
+        async function delP(id) { if (!confirm('Delete product + all history?')) return; await F(`/api/products/${id}`, { method: 'DELETE' }); loadP() }
+        async function showHist(pid, name) {
+            document.getElementById('mTitle').textContent = name + ' — History';
+            document.getElementById('mBody').innerHTML = '<div class="empty-td">Loading...</div>'; document.getElementById('modal').classList.add('show');
+            const r = await F(`/api/products/${pid}/history`); const h = await r.json();
+            document.getElementById('mBody').innerHTML = !h.length ? '<div class="empty-td">No history</div>' :
+                `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Dir</th><th>Qty</th><th>Price</th><th>Contact</th><th>Payment</th><th>Invoice</th><th>By</th></tr></thead><tbody>${h.map(x => `<tr>
+    <td style="font-size:12px">${FT(x.created_at)}</td><td class="${x.direction === 'IN' ? 'dir-in' : 'dir-out'}">${x.direction === 'IN' ? '📥 IN' : '📤 OUT'}</td>
+    <td>${x.quantity}</td><td>${x.price ? '₹' + x.price : '—'}</td><td>${H(x.contact || '—')}</td>
+    <td>${x.payment_mode ? `<span class="chip chip-amber">${x.payment_mode}</span>` : '—'}</td>
+    <td>${H(x.invoice_no || '—')}</td><td style="font-size:12px">${H(x.done_by || '—')}</td></tr>`).join('')}</tbody></table></div>`
+        }
+        function closeM() { document.getElementById('modal').classList.remove('show') }
+
+        // ═══ MANUAL ADD ═══
+        async function popSup() {
+            try {
+                const r = await F('/api/contacts?type=supplier'); const d = await r.json();
+                document.getElementById('mSup').innerHTML = '<option value="">Select supplier</option>' + d.map(c => `<option value="${c.id}">${H(c.name)}</option>`).join('')
+            } catch (e) { }
+        }
+        async function manualAdd() {
+            const fd = new FormData();
+            const map = { brand: 'mBrand', product_type: 'mType', model_no: 'mModel', quantity: 'mQty', purchase_price: 'mPP', sale_price: 'mSP', category: 'mCat', supplier_id: 'mSup', supplier_name: 'mSupN', payment_mode: 'mPay', invoice_no: 'mInv', invoice_date: 'mInvD', invoice_total: 'mInvT', invoice_notes: 'mInvN' };
+            Object.entries(map).forEach(([k, v]) => { const el = document.getElementById(v); if (el) fd.append(k, el.value) });
+            const r = await F('/api/products/manual-add', { method: 'POST', body: fd });
+            if (r.ok) {
+                Object.values(map).forEach(v => { if (v !== 'mSup' && v !== 'mPay') document.getElementById(v).value = '' });
+                document.getElementById('addMsg').textContent = '✓ Added!'; setTimeout(() => document.getElementById('addMsg').textContent = '', 3000); loadP()
+            }
+            else { const d = await r.json(); alert(d.error || 'Error') }
+        }
+
+        // ═══ VOICE ═══
+        function toggleMic() { if (!IR) startR(); else stopR() }
+        async function startR() {
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({ audio: true }); MR = new MediaRecorder(s); let ch = [];
+                MR.ondataavailable = e => ch.push(e.data); MR.onstop = () => { const b = new Blob(ch, { type: 'audio/webm' }); s.getTracks().forEach(t => t.stop()); sendV(b) };
+                MR.start(); IR = true; document.getElementById('micBtn').classList.add('rec'); document.getElementById('micBtn').innerHTML = '⏹';
+                document.getElementById('recBar').classList.add('on'); document.getElementById('vReply').style.display = 'none';
+                RS = 0; document.getElementById('recTmr').textContent = '0:00'; RI = setInterval(() => { RS++; document.getElementById('recTmr').textContent = `${Math.floor(RS / 60)}:${(RS % 60).toString().padStart(2, '0')}` }, 1000);
+                document.getElementById('vStatus').textContent = '🔴 Recording...'
+            } catch (e) { addVM('ai', 'Mic access denied') }
+        }
+        function stopR() {
+            MR.stop(); IR = false; document.getElementById('micBtn').classList.remove('rec'); document.getElementById('micBtn').innerHTML = '🎤';
+            document.getElementById('recBar').classList.remove('on'); document.getElementById('vReply').style.display = ''; clearInterval(RI); document.getElementById('vStatus').textContent = '⏳ Processing...'
+        }
+        async function sendV(b) { const fd = new FormData(); fd.append('audio', b, 'rec.webm'); const ep = VM === 'initial' ? '/api/voice' : '/api/reply'; if (VS) fd.append('session_id', VS); addVM('user', '🎤 Voice'); showVT(true); await procV(ep, fd) }
+        function doVTxt() { const t = document.getElementById('vReply').value.trim(); if (!t || VM === 'initial') return; addVM('user', t); document.getElementById('vReply').value = ''; document.getElementById('vSend').classList.remove('v'); showVT(true); const fd = new FormData(); fd.append('session_id', VS); fd.append('text', t); procV('/api/reply', fd) }
+        document.getElementById('vReply').addEventListener('input', function () { document.getElementById('vSend').classList.toggle('v', this.value.trim().length > 0) });
+        document.getElementById('vReply').addEventListener('keydown', e => { if (e.key === 'Enter') doVTxt() });
+        async function procV(ep, fd) {
+            try {
+                const r = await F(ep, { method: 'POST', body: fd }); const d = await r.json(); showVT(false);
+                if (!r.ok) { addVM('ai', '❌ ' + (d.error || 'Error')); document.getElementById('vStatus').textContent = 'Ready'; return }
+                if (d.session_id) VS = d.session_id; if (d.confirmed && d.saved_item) { const it = d.saved_item; addVT(`✓ ${it.brand} ${it.product_type} ×${it.quantity} saved`) }
+                addVM('ai', d.reply_text, (d.current_index && d.total_items > 1) ? `Item ${d.current_index}/${d.total_items}` : null);
+                if (d.reply_audio) { const a = document.getElementById('ttsA'); a.src = 'data:audio/wav;base64,' + d.reply_audio; a.play().catch(() => { }) }
+                if (d.done) { VM = 'initial'; VS = null; document.getElementById('vStatus').textContent = 'Ready — Mic press karein'; loadP(); loadSt() }
+                else { VM = 'reply'; document.getElementById('vStatus').textContent = 'Confirming...' }
+            } catch (e) { showVT(false); addVM('ai', '❌ Network error') }
+        }
+        function addVM(t, txt, badge) {
+            const c = document.getElementById('vMsgs'); const w = c.querySelector('div[style*="text-align:center"]'); if (w) w.remove();
+            const d = document.createElement('div'); d.className = 'vm ' + t; d.innerHTML = `<div class="vm-b">${badge ? `<div class="vm-badge">${H(badge)}</div>` : ''}${H(txt)}</div>`;
+            c.insertBefore(d, document.getElementById('vTyping')); c.scrollTop = c.scrollHeight
+        }
+        function addVT(t) { const c = document.getElementById('vMsgs'); const d = document.createElement('div'); d.className = 'v-toast'; d.innerHTML = `<span>${H(t)}</span>`; c.insertBefore(d, document.getElementById('vTyping')); c.scrollTop = c.scrollHeight }
+        function showVT(s) { document.getElementById('vTyping').classList.toggle('show', s); document.getElementById('vMsgs').scrollTop = document.getElementById('vMsgs').scrollHeight }
+
+        // ═══ SALES ═══
+        function popSale() {
+            const sel = document.getElementById('slProd');
+            sel.innerHTML = '<option value="">Select...</option>' + P.map(p => `<option value="${p.id}" data-q="${p.quantity}" data-p="${p.sale_price || 0}">${H(p.brand)} ${H(p.product_type)}${p.model_no ? ' (' + H(p.model_no) + ')' : ''}</option>`).join('');
+            sel.onchange = () => { const o = sel.selectedOptions[0]; document.getElementById('slAvail').value = o?.dataset?.q || ''; document.getElementById('slPrice').value = o?.dataset?.p || '' };
+            F('/api/contacts').then(r => r.json()).then(cs => { document.getElementById('slContact').innerHTML = '<option value="">Walk-in</option>' + cs.filter(c => c.contact_type !== 'supplier').map(c => `<option value="${c.id}">${H(c.name)} (${c.contact_type})</option>`).join('') })
+        }
+        async function doSale() {
+            const pid = document.getElementById('slProd').value; if (!pid) return alert('Select product');
+            const qty = parseInt(document.getElementById('slQty').value); if (!qty || qty < 1) return alert('Enter quantity');
+            const body = {
+                product_id: +pid, quantity: qty, sale_price: parseFloat(document.getElementById('slPrice').value) || 0,
+                sale_type: document.getElementById('slType').value, contact_id: document.getElementById('slContact').value || null,
+                contact_name: document.getElementById('slCName').value.trim(), payment_mode: document.getElementById('slPay').value, notes: document.getElementById('slNotes').value.trim()
+            };
+            const r = await F('/api/sales', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const d = await r.json(); if (!r.ok) return alert(d.error || 'Error');
+            document.getElementById('slMsg').textContent = '✓ Sale recorded!'; setTimeout(() => document.getElementById('slMsg').textContent = '', 3000);
+            if (d.bill) {
+                const b = d.bill; document.getElementById('billArea').innerHTML = `<div class="bill"><h3>🧾 ${H(b.bill_no)}</h3>
+    <div class="bill-r"><span>Product</span><span>${H(b.brand)} ${H(b.product_type)}</span></div>
+    <div class="bill-r"><span>Quantity</span><span>${b.quantity}</span></div>
+    <div class="bill-r"><span>Price/Unit</span><span>₹${b.sale_price}</span></div>
+    <div class="bill-r"><span>Buyer</span><span>${H(b.buyer_name || 'Walk-in')}</span></div>
+    <div class="bill-r"><span>Payment</span><span>${b.payment_mode}</span></div>
+    <div class="bill-r"><span>Total</span><span>₹${(b.total_amount || 0).toLocaleString()}</span></div></div>`
+            }
+            ['slQty', 'slPrice', 'slCName', 'slNotes'].forEach(id => document.getElementById(id).value = ''); document.getElementById('slProd').value = ''; document.getElementById('slAvail').value = ''; loadP()
+        }
+        async function loadSales() {
+            const r = await F('/api/sales'); const s = await r.json();
+            document.getElementById('salesTb').innerHTML = !s.length ? '<tr><td colspan="10" class="empty-td">No sales yet</td></tr>' :
+                s.map(x => `<tr><td style="font-size:12px">${FT(x.created_at)}</td><td>${H(x.brand)} ${H(x.product_type)}</td><td>${x.quantity_sold}</td>
+    <td>₹${x.sale_price || 0}</td><td style="font-weight:700">₹${(x.total_amount || 0).toLocaleString()}</td>
+    <td><span class="chip ${x.sale_type === 'wholesale' ? 'chip-blue' : 'chip-green'}">${x.sale_type || 'retail'}</span></td>
+    <td>${H(x.contact_display_name || x.contact_name || 'Walk-in')}</td><td><span class="chip chip-amber">${x.payment_mode}</span></td>
+    <td style="font-size:12px">${H(x.sold_by_name || '—')}</td>
+    <td><button class="act-btn" onclick="viewBill(${x.id})" title="View Bill">🧾</button></td></tr>`).join('')
+        }
+        async function viewBill(sid) {
+            const r = await F(`/api/sales/${sid}/bill`, { method: 'POST' }); const b = await r.json(); if (!b.bill_no) return alert('Bill unavailable');
+            document.getElementById('mTitle').textContent = 'Bill: ' + b.bill_no;
+            document.getElementById('mBody').innerHTML = `<div class="bill"><h3>🧾 ${H(b.bill_no)}</h3>
+    <div class="bill-r"><span>Product</span><span>${H(b.brand)} ${H(b.product_type)}</span></div>
+    <div class="bill-r"><span>Qty</span><span>${b.quantity}</span></div><div class="bill-r"><span>Price</span><span>₹${b.sale_price}</span></div>
+    <div class="bill-r"><span>Buyer</span><span>${H(b.buyer_name || 'Walk-in')}</span></div><div class="bill-r"><span>Payment</span><span>${b.payment_mode}</span></div>
+    <div class="bill-r"><span>Date</span><span>${FT(b.created_at)}</span></div>
+    <div class="bill-r"><span>Total</span><span>₹${(b.total_amount || 0).toLocaleString()}</span></div></div>`;
+            document.getElementById('modal').classList.add('show')
+        }
+
+        // ═══ TRENDS ═══
+        function popTr() { document.getElementById('trProd').innerHTML = '<option value="">All Products</option>' + P.map(p => `<option value="${p.id}">${H(p.brand)} ${H(p.product_type)}</option>`).join('') }
+        async function loadTr() {
+            const pid = document.getElementById('trProd').value; const days = document.getElementById('trDays').value;
+            let u = `/api/sales/trends?days=${days}`; if (pid) u += `&product_id=${pid}`; const r = await F(u); const data = await r.json();
+            if (TC) TC.destroy(); TC = new Chart(document.getElementById('trChart').getContext('2d'), {
+                type: 'line', data: {
+                    labels: data.map(d => d.sale_date), datasets: [
+                        { label: 'Units Sold', data: data.map(d => d.total_qty), borderColor: '#0f7b4f', backgroundColor: 'rgba(15,123,79,0.08)', fill: true, tension: .4, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: '#0f7b4f' },
+                        { label: 'Revenue ₹', data: data.map(d => d.total_revenue), borderColor: '#d97706', backgroundColor: 'rgba(217,119,6,0.08)', fill: true, tension: .4, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: '#d97706', yAxisID: 'y1' }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { labels: { color: '#6b7280', font: { size: 12, family: 'Inter' }, usePointStyle: true, boxWidth: 8, padding: 16 } }, tooltip: { backgroundColor: '#111827', padding: 10, cornerRadius: 8, titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' } } },
+                    scales: {
+                        x: { ticks: { color: '#9ca3af', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 }, grid: { color: '#f0f0f0' } },
+                        y: { beginAtZero: true, ticks: { color: '#0f7b4f', font: { size: 11 }, precision: 0 }, grid: { color: '#f0f0f0' }, position: 'left' },
+                        y1: { beginAtZero: true, ticks: { color: '#d97706', font: { size: 11 } }, grid: { display: false }, position: 'right' }
+                    }
+                }
+            })
+        }
+
+        // ═══ MOVEMENTS ═══
+        async function loadMv() {
+            let u = '/api/movements?'; const f = document.getElementById('mvF').value, t = document.getElementById('mvT').value;
+            if (f) u += `from=${f}&`; if (t) u += `to=${t}&`; const r = await F(u); const data = await r.json();
+            document.getElementById('mvTb').innerHTML = !data.length ? '<tr><td colspan="9" class="empty-td">No movements found</td></tr>' :
+                data.map(m => `<tr><td style="font-size:12px">${FT(m.created_at)}</td><td class="${m.direction === 'IN' ? 'dir-in' : 'dir-out'}">${m.direction === 'IN' ? '📥 IN' : '📤 OUT'}</td>
+    <td>${H(m.brand)}</td><td>${H(m.product_type)}</td><td>${m.quantity}</td><td>${m.price ? '₹' + m.price : '—'}</td>
+    <td style="font-size:12px">${H(m.done_by || '—')}</td><td>${H(m.contact_name || '—')}</td>
+    <td>${m.payment_mode ? `<span class="chip chip-amber">${m.payment_mode}</span>` : '—'}</td></tr>`).join('')
+        }
+
+        // ═══ MONTHLY ═══
+        function initM() { document.getElementById('mMonth').value = new Date().toISOString().slice(0, 7); loadMA() }
+        async function loadMA() {
+            const m = document.getElementById('mMonth').value; if (!m) return;
+            try {
+                const sr = await F(`/api/stock/monthly-summary?month=${m}`); const s = await sr.json();
+                document.getElementById('mSummary').innerHTML = `
+      <div class="stat"><div class="lbl">📥 Stock In</div><div class="val green">${s.in_qty || 0} units</div><div class="sub">Cost: ₹${(s.in_cost || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="lbl">📤 Stock Out</div><div class="val amber">${s.out_qty || 0} units</div><div class="sub">Revenue: ₹${(s.out_revenue || 0).toLocaleString()}</div></div>
+      <div class="stat"><div class="lbl">💰 Month Profit</div><div class="val ${(s.profit || 0) >= 0 ? 'green' : 'red'}">₹${(s.profit || 0).toLocaleString()}</div></div>`
+            } catch (e) { }
+            try {
+                const r = await F(`/api/stock/monthly?month=${m}`); const d = await r.json();
+                document.getElementById('mInTb').innerHTML = !d.length ? '<tr><td colspan="10" class="empty-td">No stock added</td></tr>' :
+                    d.map(e => `<tr><td style="font-size:12px">${FT(e.created_at)}</td><td>${H(e.brand)}</td><td>${H(e.product_type)}</td><td>${H(e.model_no || '—')}</td>
+      <td>${e.quantity_added}</td><td>${e.purchase_price ? '₹' + e.purchase_price : '—'}</td><td>${H(e.supplier_display || '—')}</td>
+      <td><span class="chip chip-amber">${e.payment_mode || '—'}</span></td><td>${H(e.invoice_no || '—')}</td><td style="font-size:12px">${H(e.added_by_name || '—')}</td></tr>`).join('')
+            } catch (e) { }
+            try {
+                const r2 = await F(`/api/sales/monthly?month=${m}`); const s2 = await r2.json();
+                document.getElementById('mOutTb').innerHTML = !s2.length ? '<tr><td colspan="9" class="empty-td">No sales</td></tr>' :
+                    s2.map(x => `<tr><td style="font-size:12px">${FT(x.created_at)}</td><td>${H(x.brand)} ${H(x.product_type)}</td><td>${x.quantity_sold}</td>
+      <td>₹${x.sale_price || 0}</td><td style="font-weight:700">₹${(x.total_amount || 0).toLocaleString()}</td><td>${H(x.buyer_display || 'Walk-in')}</td>
+      <td><span class="chip ${x.sale_type === 'wholesale' ? 'chip-blue' : 'chip-green'}">${x.sale_type || 'retail'}</span></td>
+      <td><span class="chip chip-amber">${x.payment_mode}</span></td><td style="font-size:12px">${H(x.sold_by_name || '—')}</td></tr>`).join('')
+            } catch (e) { }
+        }
+        function mTab(t) {
+            document.getElementById('mInSec').style.display = t === 'in' ? '' : 'none'; document.getElementById('mOutSec').style.display = t === 'out' ? '' : 'none';
+            document.getElementById('mtIn').classList.toggle('active', t === 'in'); document.getElementById('mtOut').classList.toggle('active', t === 'out')
+        }
+        function expM(t) { const m = document.getElementById('mMonth').value; window.open(t === 'sales' ? `/api/export/monthly-sales?month=${m}` : `/api/export/monthly?month=${m}`, '_blank') }
+
+        // ═══ CONTACTS ═══
+        async function loadC() {
+            const r = await F('/api/contacts'); const d = await r.json();
+            document.getElementById('cTb').innerHTML = !d.length ? '<tr><td colspan="6" class="empty-td">No contacts yet</td></tr>' :
+                d.map(c => `<tr><td style="font-weight:500">${H(c.name)}</td>
+    <td><span class="chip ${c.contact_type === 'supplier' ? 'chip-blue' : c.contact_type === 'retailer' ? 'chip-amber' : 'chip-green'}">${c.contact_type}</span></td>
+    <td>${H(c.phone || '—')}</td><td>${H(c.gst_no || '—')}</td><td>${H(c.address || '—')}</td>
+    <td><div class="act"><button class="act-btn" onclick="editC(${c.id},'${H(c.name).replace(/'/g, "\\'")}','${H(c.phone || "")}','${H(c.gst_no || "")}','${H(c.address || "")}')" title="Edit">✏️</button>
+      <button class="act-btn danger" onclick="delC(${c.id})" title="Delete">🗑</button></div></td></tr>`).join('')
+        }
+        function editC(id, n, ph, g, a) {
+            document.getElementById('mTitle').textContent = 'Edit: ' + n;
+            document.getElementById('mBody').innerHTML = `<div class="row"><div class="field"><label>Name</label><input id="ecN" value="${H(n)}"></div><div class="field"><label>Phone</label><input id="ecP" value="${H(ph)}"></div></div>
+    <div class="row"><div class="field"><label>GST No</label><input id="ecG" value="${H(g)}"></div><div class="field"><label>Address</label><input id="ecA" value="${H(a)}"></div></div>
+    <div class="btn-row"><button class="btn btn-p" onclick="saveC(${id})">Save Changes</button><span id="ecMsg" style="font-size:13px;color:var(--primary)"></span></div>`;
+            document.getElementById('modal').classList.add('show')
+        }
+        async function saveC(id) {
+            const body = {
+                name: document.getElementById('ecN').value.trim(), phone: document.getElementById('ecP').value.trim(),
+                gst_no: document.getElementById('ecG').value.trim(), address: document.getElementById('ecA').value.trim()
+            };
+            const r = await F(`/api/contacts/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (r.ok) { document.getElementById('ecMsg').textContent = '✓ Saved!'; setTimeout(() => { closeM(); loadC() }, 600) } else { document.getElementById('ecMsg').textContent = 'Error' }
+        }
+        async function addC() {
+            const body = {
+                name: document.getElementById('cName').value.trim(), contact_type: document.getElementById('cType').value,
+                phone: document.getElementById('cPhone').value.trim(), address: document.getElementById('cAddr').value.trim(), gst_no: document.getElementById('cGst').value.trim()
+            };
+            if (!body.name) return alert('Name required'); await F('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            ['cName', 'cPhone', 'cAddr', 'cGst'].forEach(id => document.getElementById(id).value = ''); loadC()
+        }
+        async function delC(id) { if (!confirm('Delete?')) return; await F(`/api/contacts/${id}`, { method: 'DELETE' }); loadC() }
+
+        // ═══ TEAM ═══
+        async function loadTeam() {
+            const r = await F('/api/users'); const u = await r.json();
+            document.getElementById('teamTb').innerHTML = !u.length ? '<tr><td colspan="5" class="empty-td">No members</td></tr>' :
+                u.map(x => `<tr><td style="font-weight:500">${H(x.full_name)}</td><td style="font-size:12px">${H(x.username)}</td>
+    <td><span class="chip chip-green">${x.role}</span></td><td style="color:${x.is_active ? 'var(--primary)' : 'var(--danger)'}; font-weight:600">${x.is_active ? 'Active' : 'Disabled'}</td>
+    <td>${['admin', 'superadmin'].includes(U.role) ? `<button class="btn btn-sm ${x.is_active ? 'btn-d' : 'btn-s'}" onclick="togU(${x.id},${x.is_active ? 'false' : 'true'})">${x.is_active ? 'Disable' : 'Enable'}</button>` : ''}</td></tr>`).join('')
+        }
+        async function togU(id, a) { await F(`/api/users/${id}/toggle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: a }) }); loadTeam() }
+        async function regEmp() {
+            const body = {
+                full_name: document.getElementById('eName').value.trim(), username: document.getElementById('eUser').value.trim(),
+                password: document.getElementById('ePass').value, role: document.getElementById('eRole').value
+            };
+            if (!body.full_name || !body.username || !body.password) return alert('All fields required');
+            const r = await F('/api/auth/register-employee', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const d = await r.json(); const m = document.getElementById('eMsg');
+            if (!r.ok) { m.textContent = d.error; m.style.color = 'var(--danger)' } else {
+                m.textContent = '✓ Registered!'; m.style.color = 'var(--primary)';
+                ['eName', 'eUser', 'ePass'].forEach(id => document.getElementById(id).value = ''); loadTeam()
+            } setTimeout(() => m.textContent = '', 3000)
+        }
+
+        // ═══ ALL SHOPS ═══
+        async function loadAS() {
+            const [sr, ur] = await Promise.all([F('/api/admin/shops'), F('/api/admin/users')]); const sh = await sr.json(); const us = await ur.json();
+            document.getElementById('shopsTb').innerHTML = sh.map(s => `<tr><td>${s.id}</td><td style="font-weight:500">${H(s.name)}</td><td>${H(s.address || '—')}</td><td>${H(s.phone || '—')}</td><td style="font-size:12px">${FT(s.created_at)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-td">None</td></tr>';
+            document.getElementById('auTb').innerHTML = us.map(u => `<tr><td style="font-weight:500">${H(u.full_name)}</td><td style="font-size:12px">${H(u.username)}</td>
+    <td><span class="chip chip-green">${u.role}</span></td><td>${H(u.shop_name || '—')}</td>
+    <td style="color:${u.is_active ? 'var(--primary)' : 'var(--danger)'}; font-weight:600">${u.is_active ? 'Active' : 'Disabled'}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-td">None</td></tr>'
+        }
+
+        function H(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML }
+        function FT(i) { if (!i) return '—'; return new Date(i + (i.includes('Z') ? '' : 'Z')).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) }
+        init();
+    </script>
+</body>
+
+</html>

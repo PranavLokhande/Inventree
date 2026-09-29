@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory AI — Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #f4f6f5;
+            --panel: #fff;
+            --panel-2: #f0f3f1;
+            --line: #e2e8e5;
+            --accent: #0d8a55;
+            --accent-light: #e8f7f0;
+            --text: #152019;
+            --text-mid: #4a5d53;
+            --text-dim: #7d8f86;
+            --danger: #d94444;
+            --sans: 'Inter', system-ui, sans-serif
+        }
+
+        body {
+            background: #ffffff;
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 420px
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 28px
+        }
+
+        .logo-icon {
+            display: flex;
+            flex-direction: column;
+            border-radius: 14px;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+            color: #fff
+        }
+
+        .logo-area h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -.02em
+        }
+
+        .logo-area p {
+            font-size: .78rem;
+            color: var(--text-dim);
+            margin-top: 2px
+        }
+
+        .tabs {
+            display: flex;
+            gap: 2px;
+            background: var(--panel-2);
+            border-radius: 12px;
+            padding: 3px;
+            margin-bottom: 20px
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 10px;
+            border: none;
+            background: none;
+            font-family: var(--sans);
+            transition: .2s
+        }
+
+        .tab.active {
+            background: #fff;
+            color: var(--accent);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .08)
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 24px 20px
+        }
+
+        .card.hidden {
+            display: none
+        }
+
+        .field {
+            margin-bottom: 14px
+        }
+
+        .field label {
+            display: block;
+            font-size: .7rem;
+            font-weight: 600;
+            color: var(--text-mid);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: .06em
+        }
+
+        .field input {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: .88rem;
+            font-family: var(--sans);
+            outline: none;
+            transition: .2s
+        }
+
+        .field input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light)
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 13px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--sans);
+            margin-top: 6px;
+            transition: .2s
+        }
+
+        .submit-btn:hover {
+            filter: brightness(1.1)
+        }
+
+        .submit-btn:disabled {
+            opacity: .5;
+            cursor: not-allowed
+        }
+
+        .error-msg {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: var(--danger);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: .8rem;
+            margin-bottom: 14px;
+            display: none
+        }
+
+        .error-msg.show {
+            display: block
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 18px 0;
+            font-size: .72rem;
+            color: var(--text-dim)
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .section-label {
+            font-size: .7rem;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: .06em
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 16px;
+            font-size: .76rem;
+            color: var(--text-dim)
+        }
+
+        .footer-note a {
+            color: var(--accent);
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 600
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="logo-area">
+            <div class="logo-icon">
+                <img style="width: 70px;" src="{{ url_for('static', filename='img/Logo_Icon.png') }}"
+                    alt="Logo">
+                <img style="height: 30px;" src="{{ url_for('static', filename='img/Logo_Name.png') }}" alt="InvenTree">
+            </div>
+            <p>Distributor Stock Management</p>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('login')">Login</button>
+            <button class="tab" onclick="showTab('register')">Register Shop</button>
+        </div>
+        <div class="card" id="loginCard">
+            <div class="error-msg" id="loginError"></div>
+            <div class="field"><label>Username</label><input type="text" id="loginUsername" placeholder="Enter username"
+                    autocomplete="username"></div>
+            <div class="field"><label>Password</label><input type="password" id="loginPassword"
+                    placeholder="Enter password" autocomplete="current-password"></div>
+            <button class="submit-btn" id="loginBtn" onclick="doLogin()">Login</button>
+            <div class="footer-note">New shop? <a onclick="showTab('register')">Register here</a></div>
+        </div>
+        <div class="card hidden" id="registerCard">
+            <div class="error-msg" id="registerError"></div>
+            <div class="section-label">Shop Details</div>
+            <div class="field"><label>Shop / Business Name</label><input type="text" id="regShopName"
+                    placeholder="e.g. Sharma Electronics"></div>
+            <div class="field"><label>Address</label><input type="text" id="regAddress"
+                    placeholder="e.g. MG Road, Indore"></div>
+            <div class="field"><label>Phone</label><input type="tel" id="regPhone" placeholder="9876543210"></div>
+            <div class="divider">Your Admin Account</div>
+            <div class="field"><label>Full Name</label><input type="text" id="regFullName" placeholder="Your name">
+            </div>
+            <div class="field"><label>Username</label><input type="text" id="regUsername" placeholder="Choose username"
+                    autocomplete="username"></div>
+            <div class="field"><label>Password</label><input type="password" id="regPassword" placeholder="Min 4 chars"
+                    autocomplete="new-password"></div>
+            <button class="submit-btn" id="registerBtn" onclick="doRegister()">Register & Start</button>
+            <div class="footer-note">Already registered? <a onclick="showTab('login')">Login here</a></div>
+        </div>
+    </div>
+    <script>
+        function showTab(t) {
+            document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', (t === 'login' && i === 0) || (t === 'register' && i === 1)));
+            document.getElementById('loginCard').classList.toggle('hidden', t !== 'login'); document.getElementById('registerCard').classList.toggle('hidden', t !== 'register')
+        }
+        function showErr(id, msg) { const e = document.getElementById(id); e.textContent = msg; e.classList.add('show') }
+        function hideErr(id) { document.getElementById(id).classList.remove('show') }
+        async function doLogin() {
+            hideErr('loginError'); const b = document.getElementById('loginBtn'); b.disabled = true; b.textContent = 'Logging in...';
+            try {
+                const r = await fetch('/api/auth/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: document.getElementById('loginUsername').value.trim(), password: document.getElementById('loginPassword').value })
+                });
+                const d = await r.json(); if (!r.ok) showErr('loginError', d.error || 'Login failed'); else window.location.href = '/dashboard.html';
+            } catch (e) { showErr('loginError', 'Network error') } b.disabled = false; b.textContent = 'Login'
+        }
+        async function doRegister() {
+            hideErr('registerError'); const b = document.getElementById('registerBtn'); b.disabled = true; b.textContent = 'Setting up...';
+            try {
+                const r = await fetch('/api/auth/register-shop', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        shop_name: document.getElementById('regShopName').value.trim(), address: document.getElementById('regAddress').value.trim(),
+                        phone: document.getElementById('regPhone').value.trim(), full_name: document.getElementById('regFullName').value.trim(),
+                        username: document.getElementById('regUsername').value.trim(), password: document.getElementById('regPassword').value
+                    })
+                });
+                const d = await r.json(); if (!r.ok) showErr('registerError', d.error || 'Failed'); else window.location.href = '/dashboard.html';
+            } catch (e) { showErr('registerError', 'Network error') } b.disabled = false; b.textContent = 'Register & Start'
+        }
+        document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
+        document.getElementById('regPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doRegister() });
+    </script>
+</body>
+
+</html>
